@@ -23,9 +23,9 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading && !realtimeData.length" class="text-center py-12">
+    <div v-if="loading && !realtimeData.length" class="loading-state">
       <div class="spinner spinner-lg"></div>
-      <p class="mt-4 text-muted">Loading Unit Data...</p>
+      <p class="mt-4 text-muted">Menghubungkan ke sistem monitoring...</p>
     </div>
 
     <template v-else>
@@ -376,12 +376,17 @@ onMounted(() => {
 // Helpers
 const updateDate = () => {
     const now = new Date()
-    currentDate.value = now.toLocaleDateString('id-ID', { 
+    const options = { 
         weekday: 'long', 
         year: 'numeric', 
         month: 'long', 
-        day: 'numeric' 
-    })
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    }
+    currentDate.value = now.toLocaleString('id-ID', options).replace(/\./g, ':') + ' WITA'
 }
 
 const getValue = (fieldName) => {
@@ -1135,4 +1140,16 @@ const exportCSV = () => {
         gap: 1.5rem;
     }
 }
+
+/* Loading State */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    width: 100%;
+    text-align: center;
+}
+
 </style>

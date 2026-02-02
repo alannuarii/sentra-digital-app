@@ -1,16 +1,31 @@
 <template>
   <div class="animate-fade-in dashboard-container">
     <!-- Header with System Frequency & Total Power -->
-    <div class="dashboard-header">
-      <div class="header-stats">
-        <div v-if="systemFrequency > 0" class="system-frequency">
+    <!-- Header Card -->
+    <div class="dashboard-header-card mb-6 animate-slide-down">
+      <!-- Left: Total Power -->
+      <div class="header-section left">
+        <div class="power-metric">
+          <span class="metric-label">Total Active Power</span>
+          <div class="metric-value-group">
+            <span class="metric-value">{{ totalActivePower }}</span>
+            <span class="metric-unit">kW</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Frequency -->
+      <div class="header-section center">
+        <div v-if="systemFrequency > 0" class="frequency-display">
           <span class="freq-value">{{ systemFrequency.toFixed(2) }}</span>
           <span class="freq-unit">Hz</span>
         </div>
-        <div class="total-power">
-          <span class="power-label">Total Active Power:</span>
-          <span class="power-value">{{ totalActivePower }}</span>
-          <span class="power-unit">kW</span>
+      </div>
+      
+      <!-- Right: Date Display -->
+      <div class="header-section right">
+        <div class="header-date">
+          <p class="text-sm text-muted font-medium m-0">{{ currentDate }}</p>
         </div>
       </div>
     </div>
@@ -23,13 +38,13 @@
     </div>
 
     <!-- Loading State -->
-    <div v-else-if="loading" class="text-center py-8">
+    <div v-else-if="loading" class="loading-state">
       <div class="spinner spinner-lg"></div>
       <p class="mt-4 text-muted">Menghubungkan ke sistem monitoring...</p>
     </div>
 
     <!-- Units Grid -->
-    <div v-else class="units-grid">
+    <div v-else class="units-grid grid-cols-1-mobile gap-mobile-4">
       <!-- Upper Row -->
       <UnitMonitor :unit="1" :data="dg1Data" />
       <UnitMonitor :unit="4" :data="[]" />
@@ -52,6 +67,22 @@ const dg8Data = ref([])
 const dg9Data = ref([])
 const error = ref(null)
 const loading = ref(true)
+const currentDate = ref('')
+
+const updateDate = () => {
+    const now = new Date()
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    }
+    currentDate.value = now.toLocaleString('id-ID', options).replace(/\./g, ':') + ' WITA'
+}
 
 // Calculate system frequency from first available unit
 const systemFrequency = computed(() => {
@@ -122,12 +153,15 @@ const fetchAllData = async () => {
 // Initial fetch
 onMounted(() => {
   fetchAllData()
+  updateDate()
   
   // Auto-refresh every 1 second
   const interval = setInterval(fetchAllData, 1000)
+  const dateInterval = setInterval(updateDate, 1000)
   
   onUnmounted(() => {
     clearInterval(interval)
+    clearInterval(dateInterval)
   })
 })
 </script>
@@ -135,76 +169,161 @@ onMounted(() => {
 <style scoped>
 /* Force compact sizing for dashboard */
 .dashboard-container {
-  height: calc(100vh - 65px); /* Adjusted for better fit */
+  min-height: calc(100vh - 140px); /* Fill available space */
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   padding: 0 var(--space-6); /* Increased horizontal padding */
 }
 
-.dashboard-header {
-  display: flex;
-  justify-content: center;
+/* Dashboard Header Card */
+.dashboard-header-card {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
+  background: white; /* Fallback */
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 24px; /* Larger radius for modern feel */
+  padding: 1.5rem 2rem;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05), 
+              0 4px 6px -4px rgba(0, 0, 0, 0.02);
   margin-top: var(--space-2);
-  margin-bottom: var(--space-3);
-  flex-shrink: 0;
+  transition: all 0.3s ease;
 }
 
-.system-frequency {
+.dashboard-header-card:hover {
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.08); /* Lift effect */
+  transform: translateY(-2px);
+}
+
+.header-section {
+  display: flex;
+  align-items: center;
+}
+
+.header-section.left {
+  justify-content: flex-start;
+}
+
+.header-section.center {
+  justify-content: center;
+}
+
+.header-section.right {
+  justify-content: flex-end;
+}
+
+/* Power Metric (Left) */
+.power-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start; /* Align left for cleaner look */
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.1em; /* Increased spacing */
+  font-weight: 700;
+}
+
+.metric-value-group {
   display: flex;
   align-items: baseline;
-  gap: var(--space-2);
+  gap: 0.35rem;
+}
+
+.metric-value {
+  font-size: 1.75rem; /* Larger */
+  font-weight: 800;
+  color: var(--gray-800);
+  line-height: 1;
+  background: linear-gradient(45deg, var(--gray-800), var(--gray-600));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.metric-unit {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-400);
+}
+
+/* Frequency Display (Center) - The Star */
+.frequency-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   background: white;
-  border: 1px solid var(--gray-200);
-  padding: 0.25rem 1.5rem; /* Reduced padding */
-  border-radius: var(--radius-full);
-  box-shadow: var(--shadow-sm);
-  color: var(--primary-600);
+  padding: 1rem 2.5rem;
+  border-radius: 20px;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02),
+              0 4px 12px rgba(37, 99, 235, 0.1); /* Subtle primary tint shadow */
+  border: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .freq-value {
-  font-size: 2rem; /* Reduced from 2.5rem */
-  font-weight: 800;
+  font-size: 2.25rem; /* Reduced from 3rem */
+  font-weight: 800; /* Slightly reduced weight */
   line-height: 1;
+  color: var(--primary-600); /* Restored to variable */
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .freq-unit {
-  font-size: 1rem; /* Reduced from 1.25rem */
-  font-weight: 600;
-  color: var(--gray-500);
-}
-
-.header-stats {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-}
-
-.total-power {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  background: var(--gray-50);
-  border: 1px solid var(--gray-200);
-  padding: 0.5rem 1.25rem;
-  border-radius: var(--radius-md);
-}
-
-.power-label {
   font-size: 0.875rem;
-  color: var(--gray-500);
-}
-
-.power-value {
-  font-size: 1.5rem;
   font-weight: 700;
-  color: var(--gray-800);
+  color: #64748b;
+  margin-top: 0.25rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.power-unit {
-  font-size: 0.875rem;
-  color: var(--gray-500);
+/* Date (Right) */
+.header-date {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh; /* Fixed height to ensure centering */
+  width: 100%;
+  text-align: center;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .dashboard-header-card {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+    text-align: center;
+    padding: var(--space-4);
+  }
+
+  .header-section {
+    justify-content: center !important;
+  }
+  
+  /* Order: Frequency first, then power */
+  .header-section.center {
+    order: -1;
+    margin-bottom: var(--space-2);
+  }
+
+  .header-date {
+    display: none;
+  }
 }
 
 /* Updated Grid Layout - Left Aligned */
@@ -228,8 +347,9 @@ onMounted(() => {
 }
 
 .error-card {
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
+  background: var(--bg-card);
+  border: 1px solid var(--danger);
+  color: var(--danger);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
   text-align: center;
