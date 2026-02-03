@@ -134,3 +134,16 @@ const savePmToLocalStorage = (item) => {
   }
 }
 </script>
+
+<style scoped>
+/* Force Center Alignment */
+.table th, .table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.table th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+</style>

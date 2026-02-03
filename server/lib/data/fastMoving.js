@@ -11,7 +11,7 @@ export const fastMovingMaterials = [
     },
     {
         unit: 4,
-        mesin: "Deutz MWM 212 V12",
+        mesin: "Deutz TBD 616 V12",
         material: [
             { nama: "Lube Oil Filter", jumlah: 1, satuan: "buah", cycle: "P3" },
             { nama: "Fuel Filter", jumlah: 1, satuan: "buah", cycle: "P2" },
@@ -21,7 +21,7 @@ export const fastMovingMaterials = [
     },
     {
         unit: 5,
-        mesin: "Deutz MWM 212 V12",
+        mesin: "Deutz TBD 616 V12",
         material: [
             { nama: "Lube Oil Filter", jumlah: 1, satuan: "buah", cycle: "P3" },
             { nama: "Fuel Filter", jumlah: 1, satuan: "buah", cycle: "P2" },

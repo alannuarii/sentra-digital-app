@@ -483,7 +483,7 @@ const submitRealization = async () => {
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  items-align: center;
+  /* items-align: center; */
   z-index: 2;
   text-align: center;
 }

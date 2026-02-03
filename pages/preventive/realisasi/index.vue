@@ -380,6 +380,12 @@ const deleteRealization = async () => {
 </script>
 
 <style scoped>
+/* Force Center Alignment for All Tables in this page */
+.table th, .table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
 /* View Toggle */
 .view-toggle {
   display: flex;

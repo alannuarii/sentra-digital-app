@@ -11,7 +11,7 @@ export const overhaulCycles = [
     },
     {
         unit: 4,
-        mesin: "Deutz MWM 212 V12",
+        mesin: "Deutz TBD 616 V12",
         cycles: [
             { cycles: "TO", longName: "Top Overhaul", interval: 6000, duration: 18 },
             { cycles: "SO", longName: "Semi Overhaul", interval: 12000, duration: 22 },
@@ -21,7 +21,7 @@ export const overhaulCycles = [
     },
     {
         unit: 5,
-        mesin: "Deutz MWM 212 V12",
+        mesin: "Deutz TBD 616 V12",
         cycles: [
             { cycles: "TO", longName: "Top Overhaul", interval: 6000, duration: 18 },
             { cycles: "SO", longName: "Semi Overhaul", interval: 12000, duration: 22 },
