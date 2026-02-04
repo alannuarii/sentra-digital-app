@@ -144,6 +144,15 @@
           </tbody>
         </table>
       </div>
+      
+      <!-- Pagination -->
+      <CommonPagination 
+        v-if="pagination.totalPages > 1"
+        :current-page="pagination.page"
+        :total-pages="pagination.totalPages"
+        :total="pagination.total"
+        @change="changePage"
+      />
     </div>
 
     <!-- Detail Modal (from calendar click) -->
@@ -253,10 +262,24 @@ import { engines } from '~/server/lib/data/engineData'
 
 const viewMode = ref('table')
 
+// Build query string
+const queryString = computed(() => {
+  const params = new URLSearchParams()
+  if (filters.start) params.append('start', filters.start)
+  if (filters.end) params.append('end', filters.end)
+  if (filters.unit) params.append('unit', filters.unit)
+  params.append('page', filters.page)
+  params.append('limit', filters.limit)
+  return params.toString()
+})
+
+// Pagination state
 const filters = reactive({
   start: '',
   end: '',
-  unit: ''
+  unit: '',
+  page: 1,
+  limit: 10
 })
 
 const showDeleteModal = ref(false)
@@ -266,25 +289,63 @@ const selectedDetail = ref(null)
 const deleting = ref(false)
 const loadingDetail = ref(false)
 
-// Build query string
-const queryString = computed(() => {
-  const params = new URLSearchParams()
-  if (filters.start) params.append('start', filters.start)
-  if (filters.end) params.append('end', filters.end)
-  if (filters.unit) params.append('unit', filters.unit)
-  return params.toString()
+const pagination = reactive({
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 1
 })
 
-const { data: realizations, pending, refresh } = await useFetch('/api/pm/realizations', {
+const { data: responseData, pending, refresh } = await useFetch('/api/pm/realizations', {
   key: 'pm-realizations',
-  default: () => []
+  query: filters,
+  watch: [() => filters.page] 
 })
+
+// Fetch ALL data for calendar view (when viewMode is 'calendar')
+// We use a separate query object for calendar that mirrors filters but with limit=0
+const calendarQuery = computed(() => ({
+  start: filters.start,
+  end: filters.end,
+  unit: filters.unit,
+  limit: 0 // fetch all
+}))
+
+const { data: calendarData } = await useFetch('/api/pm/realizations', {
+  key: 'pm-realizations-calendar',
+  query: calendarQuery,
+  // Only fetch if in calendar mode or we need it (lazy)
+  // But since we want "real-time" switching, better to let it react to filters
+  // We can make it lazy: only fetch if viewMode is calendar
+  immediate: viewMode.value === 'calendar',
+  watch: [calendarQuery, viewMode] 
+})
+
+// Extract data and meta from response
+const realizations = computed(() => responseData.value?.data || [])
+
+// Update pagination state when data changes
+watch(responseData, (newVal) => {
+  if (newVal?.meta) {
+    pagination.page = newVal.meta.page
+    pagination.limit = newVal.meta.limit
+    pagination.total = newVal.meta.total
+    pagination.totalPages = newVal.meta.totalPages
+  }
+}, { immediate: true })
+
+const changePage = (newPage) => {
+  filters.page = newPage
+  // Scroll to top of table or page
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 // Convert realizations to calendar events format
 const calendarEvents = computed(() => {
-  if (!realizations.value) return []
+  const sourceData = calendarData.value?.data || [] // Use separate calendar data
+  if (!sourceData) return []
   
-  return realizations.value.map(item => {
+  return sourceData.map(item => {
     // Format date to YYYY-MM-DD
     const dateStr = new Date(item.tanggal_pelaksanaan).toISOString().slice(0, 10)
     
@@ -318,18 +379,15 @@ const handleEventClick = async (event) => {
 }
 
 const applyFilters = async () => {
-  const url = queryString.value 
-    ? `/api/pm/realizations?${queryString.value}` 
-    : '/api/pm/realizations'
-  
-  const data = await $fetch(url)
-  realizations.value = data
+  filters.page = 1 // Reset to first page
+  refresh() 
 }
 
 const resetFilters = () => {
   filters.start = ''
   filters.end = ''
   filters.unit = ''
+  filters.page = 1
   refresh()
 }
 
