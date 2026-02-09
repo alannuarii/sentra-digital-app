@@ -62,49 +62,59 @@ export default defineEventHandler(async (event) => {
 
         const totalPM = Object.values(pmCounts).reduce((a, b) => a + b, 0)
 
-        // Calculate materials based on PM counts with accumulation logic
-        // P1 material = used at P1, P2, P3, P4, P5 (every PM)
-        // P2 material = used at P2, P3, P4, P5
-        // P3 material = used at P3, P4, P5
-        // P4 material = used at P4, P5
-        // P5 material = used at P5 only
-        const pmUsage = {
-            P1: pmCounts.P1 + pmCounts.P2 + pmCounts.P3 + pmCounts.P4 + pmCounts.P5,
-            P2: pmCounts.P2 + pmCounts.P3 + pmCounts.P4 + pmCounts.P5,
-            P3: pmCounts.P3 + pmCounts.P4 + pmCounts.P5,
-            P4: pmCounts.P4 + pmCounts.P5,
-            P5: pmCounts.P5
-        }
-
-        // Get materials for selected units
+        // Calculate materials based on actual PM schedule events
+        // This ensures correct counting for both individual units and engine groups
         const materialsMap = new Map()
 
         const unitsToProcess = selectedUnits.length > 0 ? selectedUnits : dbUnits.map(u => u.unit)
 
-        unitsToProcess.forEach(unitNum => {
+        // Process each PM event in the schedule
+        schedule.forEach(event => {
+            const pmType = event.title.split(' ')[0] // "P1 #7" -> "P1"
+            const unitNum = event.extendedProps?.unit // Unit is in extendedProps
+
+            // Get unit's material data
             const unitData = fastMovingMaterials.find(u => u.unit === unitNum)
             if (!unitData) return
 
+            // For each PM event, add materials that are used in that PM cycle
+            // P1 materials are used in all PM types (P1, P2, P3, P4, P5)
+            // P2 materials are used in P2, P3, P4, P5
+            // P3 materials are used in P3, P4, P5
+            // P4 materials are used in P4, P5
+            // P5 materials are used in P5 only
             unitData.material.forEach(mat => {
-                const cycle = mat.cycle
-                const usageCount = pmUsage[cycle] || 0
-                const totalQty = mat.jumlah * usageCount
+                const matCycle = mat.cycle
 
-                if (totalQty === 0) return
+                // Check if this material is used in the current PM type
+                let isUsed = false
+                if (matCycle === 'P1') {
+                    isUsed = true // P1 materials used in all PM types
+                } else if (matCycle === 'P2' && ['P2', 'P3', 'P4', 'P5'].includes(pmType)) {
+                    isUsed = true
+                } else if (matCycle === 'P3' && ['P3', 'P4', 'P5'].includes(pmType)) {
+                    isUsed = true
+                } else if (matCycle === 'P4' && ['P4', 'P5'].includes(pmType)) {
+                    isUsed = true
+                } else if (matCycle === 'P5' && pmType === 'P5') {
+                    isUsed = true
+                }
+
+                if (!isUsed) return
 
                 const key = `${mat.nama}-${mat.satuan}`
                 if (materialsMap.has(key)) {
                     const existing = materialsMap.get(key)
-                    existing.jumlah += totalQty
+                    existing.jumlah += mat.jumlah
                     if (!existing.units.includes(unitNum)) {
                         existing.units.push(unitNum)
                     }
                 } else {
                     materialsMap.set(key, {
                         nama: mat.nama,
-                        jumlah: totalQty,
+                        jumlah: mat.jumlah,
                         satuan: mat.satuan,
-                        cycle: cycle,
+                        cycle: matCycle,
                         units: [unitNum]
                     })
                 }
